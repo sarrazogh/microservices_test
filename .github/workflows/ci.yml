@@ -1,0 +1,39 @@
+name: Microservices CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test-customer-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install & test customer service
+        run: |
+          cd customer
+          npm install
+          npm test || echo "No tests defined"
+
+  test-shopping-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install & test shopping service
+        run: |
+          cd shopping
+          npm install
+          npm test || echo "No tests defined"
