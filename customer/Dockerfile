@@ -1,3 +1,4 @@
+#testing
 FROM node
 
 WORKDIR /app/customer
