@@ -1,0 +1,39 @@
+name: Microservices CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-user-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install & test user-service
+        run: |
+          cd user-service
+          npm install
+          npm test
+
+  test-order-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install & test order-service
+        run: |
+          cd order-service
+          npm install
+          npm test
