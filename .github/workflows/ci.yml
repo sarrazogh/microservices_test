@@ -46,7 +46,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKER_TOKEN }}
       - name: Push Docker image
         run: |
           docker push my-dockerhub-user/customer:pr-${{ github.event.pull_request.number }}
@@ -73,7 +73,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKER_TOKEN }}
       - name: Push Docker image
         run: |
           docker push my-dockerhub-user/shopping:pr-${{ github.event.pull_request.number }}
