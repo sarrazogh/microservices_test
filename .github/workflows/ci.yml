@@ -10,13 +10,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🔐 Login Docker (UNE FOIS)
+      # 🔐 Login Docker
       - name: Docker login
         run: |
           echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-	- name: Debug docker auth
-  		run: docker info
 
+      - name: Debug docker auth
+        run: docker info
 
       # 🔍 Detect changes
       - id: filter
@@ -31,13 +31,12 @@ jobs:
         if: ${{ steps.filter.outputs.customer == 'true' }}
         run: |
           cd customer
-          docker build -t my-dockerhub-user/customer:pr-${{ github.event.pull_request.number }} .
-          docker push my-dockerhub-user/customer:pr-${{ github.event.pull_request.number }}
+          docker build -t sarrazogh/customer:pr-${{ github.event.pull_request.number }} .
+          docker push sarrazogh/customer:pr-${{ github.event.pull_request.number }}
 
       # 📦 Shopping
       - name: Build & push shopping
         if: ${{ steps.filter.outputs.shopping == 'true' }}
         run: |
           cd shopping
-          docker build -t my-dockerhub-user/shopping:pr-${{ github.event.pull_request.number }} .
-          docker push my-dockerhub-user/shopping:pr-${{ github.event.pull_request.number }}
+          docker build -t sarrazogh/shopping:pr-${{ github.event.pull_request.numbe_
