@@ -45,8 +45,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ sarrazogh }}
-          password: ${{ 233JFT2949 }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN  }}
       - name: Push Docker image
         run: |
           docker push my-dockerhub-user/customer:pr-${{ github.event.pull_request.number }}
@@ -65,7 +65,7 @@ jobs:
         run: |
           cd shopping
           npm install
-          npm test || echo "No tests defined"
+          npm test || echo "there's no tests defined"
       - name: Build Docker image
         run: |
           docker build -t my-dockerhub-user/shopping:pr-${{ github.event.pull_request.number }} ./shopping
