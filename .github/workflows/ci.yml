@@ -1,4 +1,4 @@
-name: Microservices CI
+name: Microservices CI/CD
 
 on:
   pull_request:
@@ -6,8 +6,32 @@ on:
       - master
 
 jobs:
-  test-customer-service:
+  detect-changed-services:
     runs-on: ubuntu-latest
+    outputs:
+      customer: ${{ steps.filter.outputs.customer }}
+      shopping: ${{ steps.filter.outputs.shopping }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            customer:
+              - 'customer/**'
+            shopping:
+              - 'shopping/**'
+
+  test-and-build:
+    needs: detect-changed-services
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [customer, shopping]
+      fail-fast: false
+    if: ${{ needs.detect-changed-services.outputs[matrix.service] == 'true' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -16,24 +40,22 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install & test customer service
+      - name: Install & test service
         run: |
-          cd customer
+          cd ${{ matrix.service }}
           npm install
           npm test || echo "No tests defined"
 
-  test-shopping-service:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: |
+          docker build -t my-dockerhub-user/${{ matrix.service }}:pr-${{ github.event.pull_request.number }} ./${{ matrix.service }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
-          node-version: 18
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Install & test shopping service
+      - name: Push Docker image
         run: |
-          cd shopping
-          npm install
-          npm test || echo "No tests defined"
+          docker push my-dockerhub-user/${{ matrix.service }}:pr-${{ github.event.pull_request.number }}
