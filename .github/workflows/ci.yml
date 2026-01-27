@@ -14,6 +14,9 @@ jobs:
       - name: Docker login
         run: |
           echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+	- name: Debug docker auth
+  		run: docker info
+
 
       # 🔍 Detect changes
       - id: filter
