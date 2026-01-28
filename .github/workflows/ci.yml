@@ -31,14 +31,12 @@ jobs:
             shopping:
               - 'shopping/**'
 
-      # 🔐 Docker login
       - name: Docker login
         run: |
           echo "${{ secrets.DOCKER_TOKEN }}" | docker login \
             -u "${{ secrets.DOCKER_USERNAME }}" \
             --password-stdin
 
-      # 🐳 Build & push customer service
       - name: Build & push customer service
         if: steps.filter.outputs.customer == 'true'
         run: |
@@ -46,7 +44,6 @@ jobs:
           docker build -t sarrazogh/customer:pr-${{ github.event.pull_request.number }} .
           docker push sarrazogh/customer:pr-${{ github.event.pull_request.number }}
 
-      # 🐳 Build & push shopping service
       - name: Build & push shopping service
         if: steps.filter.outputs.shopping == 'true'
         run: |
