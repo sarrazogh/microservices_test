@@ -1,9 +1,3 @@
-name: Microservices CI/CD
-
-on:
-  pull_request:
-    branches: [master]
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -11,35 +5,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Debug secrets
+        run: |
+          echo "USERNAME is set: ${{ secrets.DOCKER_USERNAME != '' }}"
+          echo "TOKEN is set: ${{ secrets.DOCKER_TOKEN != '' }}"
+
       # 🔐 Docker login
       - name: Docker login
         run: |
-          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Debug docker auth
-        run: docker info
-
-      # 🔍 Detect changes
-      - name: Detect changed services
-        id: filter
-        uses: dorny/paths-filter@v2
-        with:
-          filters: |
-            customer:
-              - 'customer/**'
-            shopping:
-              - 'shopping/**'
-
-      - name: Build & push customer
-        if: steps.filter.outputs.customer == 'true'
-        run: |
-          cd customer
-          docker build -t sarrazogh/customer:pr-${{ github.event.pull_request.number }} .
-          docker push sarrazogh/customer:pr-${{ github.event.pull_request.number }}
-
-      - name: Build & push shopping
-        if: steps.filter.outputs.shopping == 'true'
-        run: |
-          cd shopping
-          docker build -t sarrazogh/shopping:pr-${{ github.event.pull_request.number }} .
-          docker push sarrazogh/shopping:pr-${{ github.event.pull_request.number }}
+          echo "${{ secrets.DOCKER_TOKEN }}" | docker login \
+            -u "${{ secrets.DOCKER_USERNAME }}" \
+            --password-stdin
