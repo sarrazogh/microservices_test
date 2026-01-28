@@ -1,39 +1,55 @@
-name: Microservices CI
+name: Microservices CI/CD
 
 on:
-  pull_request:
+  pull_request_target::
     branches:
       - master
 
 jobs:
-  test-customer-service:
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      # 📥 Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # 🔍 DEBUG secrets (temporaire)
+      - name: Debug secrets
+        run: |
+          echo "USERNAME is set: ${{ secrets.DOCKER_USERNAME != '' }}"
+          echo "TOKEN is set: ${{ secrets.DOCKER_TOKEN != '' }}"
+
+      # 🔍 Detect changed services
+      - name: Detect changed services
+        id: filter
+        uses: dorny/paths-filter@v2
         with:
-          node-version: 18
+          filters: |
+            customer:
+              - 'customer/**'
+            shopping:
+              - 'shopping/**'
 
-      - name: Install & test customer service
+      # 🔐 Docker login
+      - name: Docker login
+        run: |
+          echo "${{ secrets.DOCKER_TOKEN }}" | docker login \
+            -u "${{ secrets.DOCKER_USERNAME }}" \
+            --password-stdin
+
+      # 🐳 Build & push customer service
+      - name: Build & push customer service
+        if: steps.filter.outputs.customer == 'true'
         run: |
           cd customer
-          npm install
-          npm test || echo "No tests defined"
+          docker build -t sarrazogh/customer:pr-${{ github.event.pull_request.number }} .
+          docker push sarrazogh/customer:pr-${{ github.event.pull_request.number }}
 
-  test-shopping-service:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install & test shopping service
+      # 🐳 Build & push shopping service
+      - name: Build & push shopping service
+        if: steps.filter.outputs.shopping == 'true'
         run: |
           cd shopping
-          npm install
-          npm test || echo "No tests defined"
+          docker build -t sarrazogh/shopping:pr-${{ github.event.pull_request.number }} .
+          docker push sarrazogh/shopping:pr-${{ github.event.pull_request.number }}
