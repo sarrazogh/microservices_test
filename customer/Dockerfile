@@ -1,4 +1,4 @@
-#testing
+#test microservices workflow
 FROM node
 
 WORKDIR /app/customer

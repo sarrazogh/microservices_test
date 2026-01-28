@@ -9,18 +9,16 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        service:
+          - customer
+          - shopping
+
     steps:
-      # 📥 Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 🔍 DEBUG secrets (temporaire)
-      - name: Debug secrets
-        run: |
-          echo "USERNAME is set: ${{ secrets.DOCKER_USERNAME != '' }}"
-          echo "TOKEN is set: ${{ secrets.DOCKER_TOKEN != '' }}"
-
-      # 🔍 Detect changed services
       - name: Detect changed services
         id: filter
         uses: dorny/paths-filter@v2
@@ -32,21 +30,20 @@ jobs:
               - 'shopping/**'
 
       - name: Docker login
+        if: steps.filter.outputs[matrix.service] == 'true'
         run: |
           echo "${{ secrets.DOCKER_TOKEN }}" | docker login \
             -u "${{ secrets.DOCKER_USERNAME }}" \
             --password-stdin
 
-      - name: Build & push customer service
-        if: steps.filter.outputs.customer == 'true'
+      - name: Build image
+        if: steps.filter.outputs[matrix.service] == 'true'
         run: |
-          cd customer
-          docker build -t sarrazogh/customer:pr-${{ github.event.pull_request.number }} .
-          docker push sarrazogh/customer:pr-${{ github.event.pull_request.number }}
+          cd ${{ matrix.service }}
+          docker build -t sarrazogh/${{ matrix.service }}:pr-${{ github.event.pull_request.number }} .
 
-      - name: Build & push shopping service
-        if: steps.filter.outputs.shopping == 'true'
+
+      - name: Push image
+        if: steps.filter.outputs[matrix.service] == 'true'
         run: |
-          cd shopping
-          docker build -t sarrazogh/shopping:pr-${{ github.event.pull_request.number }} .
-          docker push sarrazogh/shopping:pr-${{ github.event.pull_request.number }}
+          docker push sarrazogh/${{ matrix.service }}:pr-${{ github.event.pull_request.number }}
