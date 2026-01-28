@@ -1,14 +1,35 @@
+name: Microservices CI/CD
+
+on:
+  pull_request:
+    branches:
+      - master
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # 📥 Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      # 🔍 DEBUG secrets (temporaire)
       - name: Debug secrets
         run: |
           echo "USERNAME is set: ${{ secrets.DOCKER_USERNAME != '' }}"
           echo "TOKEN is set: ${{ secrets.DOCKER_TOKEN != '' }}"
+
+      # 🔍 Detect changed services
+      - name: Detect changed services
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            customer:
+              - 'customer/**'
+            shopping:
+              - 'shopping/**'
 
       # 🔐 Docker login
       - name: Docker login
@@ -16,3 +37,19 @@ jobs:
           echo "${{ secrets.DOCKER_TOKEN }}" | docker login \
             -u "${{ secrets.DOCKER_USERNAME }}" \
             --password-stdin
+
+      # 🐳 Build & push customer service
+      - name: Build & push customer service
+        if: steps.filter.outputs.customer == 'true'
+        run: |
+          cd customer
+          docker build -t sarrazogh/customer:pr-${{ github.event.pull_request.number }} .
+          docker push sarrazogh/customer:pr-${{ github.event.pull_request.number }}
+
+      # 🐳 Build & push shopping service
+      - name: Build & push shopping service
+        if: steps.filter.outputs.shopping == 'true'
+        run: |
+          cd shopping
+          docker build -t sarrazogh/shopping:pr-${{ github.event.pull_request.number }} .
+          docker push sarrazogh/shopping:pr-${{ github.event.pull_request.number }}
