@@ -30,7 +30,6 @@ jobs:
             shopping:
               - 'shopping/**'
 
-      # 📦 Customer
       - name: Build & push customer
         if: steps.filter.outputs.customer == 'true'
         run: |
@@ -38,7 +37,6 @@ jobs:
           docker build -t sarrazogh/customer:pr-${{ github.event.pull_request.number }} .
           docker push sarrazogh/customer:pr-${{ github.event.pull_request.number }}
 
-      # 📦 Shopping
       - name: Build & push shopping
         if: steps.filter.outputs.shopping == 'true'
         run: |
