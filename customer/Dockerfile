@@ -1,5 +1,5 @@
 #test microservices workflow
-FROM node
+FROM node:20-alpine
 
 WORKDIR /app/customer
 
