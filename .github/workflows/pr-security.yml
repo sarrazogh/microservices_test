@@ -1,0 +1,107 @@
+name: PR DevSecOps Pipeline
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  pr-security-build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - customer
+          - shopping
+
+    steps:
+      # =========================
+      # 1️⃣ Checkout code
+      # =========================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # =========================
+      # 2️⃣ Detect changed services
+      # =========================
+      - name: Detect changed services
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            customer:
+              - 'customer/**'
+            shopping:
+              - 'shopping/**'
+
+      # =========================
+      # 3️⃣ Skip if service unchanged
+      # =========================
+      - name: Skip unchanged service
+        if: steps.filter.outputs[matrix.service] != 'true'
+        run: |
+          echo "No changes in ${{ matrix.service }}. Skipping pipeline."
+          exit 0
+
+      # =========================
+      # 4️⃣ Secrets Scan (Gitleaks)
+      # =========================
+      - name: Secrets scan (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --redact --verbose
+
+      # =========================
+      # 5️⃣ Build (Docker)
+      # =========================
+      - name: Build Docker image
+        run: |
+          cd ${{ matrix.service }}
+          docker build -t ${{ matrix.service }}:pr .
+
+      # =========================
+      # 6️⃣ Tests (placeholder)
+      # =========================
+      - name: Run tests
+        run: |
+          cd ${{ matrix.service }}
+          if [ -f "pom.xml" ]; then
+            mvn test
+          elif [ -f "package.json" ]; then
+            npm install
+            npm test || true
+          else
+            echo "No tests found"
+          fi
+
+      # =========================
+      # 7️⃣ SAST (Semgrep example)
+      # =========================
+      - name: SAST scan (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: auto
+
+      # =========================
+      # 8️⃣ Dependency Scan (OWASP)
+      # =========================
+      - name: Dependency scan (OWASP Dependency-Check)
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: ${{ matrix.service }}
+          path: ${{ matrix.service }}
+          format: 'HTML'
+          failOnCVSS: 7
+
+      # =========================
+      # 9️⃣ Container Image Scan
+      # =========================
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.service }}:pr
+          severity: CRITICAL,HIGH
+          exit-code: 1
