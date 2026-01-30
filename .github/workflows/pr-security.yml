@@ -51,15 +51,34 @@ jobs:
           exit 0
 
       # =========================
+      # 3️⃣a Delete old artifacts
+      # =========================
+      - name: Delete old artifacts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const res = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            res.data.artifacts.forEach(({ id }) => {
+              github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: id
+              });
+            });
+
+      # =========================
       # 4️⃣ Secrets Scan (Gitleaks)
       # =========================
       - name: Secrets scan (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # default workflow token, or use your custom PAT
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: detect --redact --report-format=sarif --report-path=results-${{ matrix.service }}.sarif
-                      
+          upload_artifact: false
 
       # =========================
       # 5️⃣ Build Docker image
