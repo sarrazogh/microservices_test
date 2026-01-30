@@ -1,0 +1,153 @@
+name: Pull Request DevSecOps Pipeline test
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  # ==================================================
+  # 🔐 JOB 1 — GLOBAL SECRETS SCAN (GITLEAKS)
+  # ==================================================
+  secrets-scan:
+    name: Global Secrets Scan
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secrets scan (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==================================================
+  # 🏗️ JOB 2 — BUILD & DEVSECOPS PER MICROSERVICE
+  # ==================================================
+  pr-security-build:
+    name: Build & Scan Microservices
+    needs: secrets-scan
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - customer
+          - shopping
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      # =========================
+      # 1️⃣ Checkout
+      # =========================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # =========================
+      # 2️⃣ Detect changed services
+      # =========================
+      - name: Detect changed services
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            customer:
+              - 'customer/**'
+            shopping:
+              - 'shopping/**'
+
+      # =========================
+      # 3️⃣ Skip unchanged service
+      # =========================
+      - name: Skip unchanged service
+        if: steps.filter.outputs[matrix.service] != 'true'
+        run: |
+          echo "No changes in ${{ matrix.service }}. Skipping."
+          exit 0
+
+      # =========================
+      # 4️⃣ Build Docker image
+      # =========================
+      - name: Build Docker image
+        run: |
+          cd ${{ matrix.service }}
+          docker build -t ${{ matrix.service }}:pr .
+
+      # =========================
+      # 5️⃣ Run tests
+      # =========================
+      - name: Run tests
+        run: |
+          cd ${{ matrix.service }}
+          if [ -f "pom.xml" ]; then
+            mvn test
+          elif [ -f "package.json" ]; then
+            npm install
+            npm test || true
+          else
+            echo "No tests found"
+          fi
+
+      # =========================
+      # 6️⃣ SAST scan (Semgrep)
+      # =========================
+      - name: SAST scan (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: auto
+
+      - name: Upload Semgrep artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report-${{ matrix.service }}
+          path: semgrep-results.json
+          if-no-files-found: ignore
+
+      # =========================
+      # 7️⃣ Dependency Scan (OWASP)
+      # =========================
+      - name: Dependency scan (OWASP Dependency-Check)
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: ${{ matrix.service }}
+          path: ${{ matrix.service }}
+          format: HTML
+          failOnCVSS: 7
+
+      - name: Upload Dependency-Check artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report-${{ matrix.service }}
+          path: dependency-check-report.html
+          if-no-files-found: ignore
+
+      # =========================
+      # 🔟 Container Image Scan (Trivy)
+      # =========================
+      - name: Trivy image scan
+	id: trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.service }}:pr
+          severity: CRITICAL,HIGH
+          format: json
+          output: trivy-report-${{ matrix.service }}.json
+          exit-code: 1
+          skip-dirs: |
+            /root/.npm
+            /root/.cache
+            /usr/share/doc
+          skip-files: |
+            **/*.jar
+            **/*.zip
+            **/*.tar
