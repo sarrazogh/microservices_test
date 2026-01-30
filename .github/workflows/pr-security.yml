@@ -135,7 +135,6 @@ jobs:
       # 🔟 Container Image Scan (Trivy)
       # =========================
       - name: Trivy image scan
-	id: trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ matrix.service }}:pr
