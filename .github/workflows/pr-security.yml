@@ -58,7 +58,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # default workflow token, or use your custom PAT
         with:
-          artifact_name: "gitleaks-results-${{ github.run_id }}"                      
+          args: detect --redact --report-format=sarif --report-path=results-${{ matrix.service }}.sarif
+                      
 
       # =========================
       # 5️⃣ Build Docker image
