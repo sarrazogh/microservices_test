@@ -50,17 +50,18 @@ jobs:
           echo "No changes in ${{ matrix.service }}. Skipping pipeline."
           exit 0
 
-   # =========================
-   # 4️⃣ Secrets Scan (Gitleaks)
+      # =========================
+      # 4️⃣ Secrets Scan (Gitleaks)
       # =========================
       - name: Secrets scan (Gitleaks)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          output: gitleaks-report-${{ matrix.service }}.json
-          upload_artifact: true
+        run: |
+          gitleaks detect --redact --report-format=json --report-path=results-${{ matrix.service }}.json
 
+      - name: Upload Gitleaks artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gitleaks-report-${{ matrix.service }}-${{ github.run_id }}
+          path: results-${{ matrix.service }}.json
 
       # =========================
       # 5️⃣ Build Docker image
