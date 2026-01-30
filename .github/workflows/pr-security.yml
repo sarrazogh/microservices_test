@@ -58,7 +58,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # default workflow token, or use your custom PAT
         with:
-          upload_artifact: false                       # disable artifact to avoid 409 conflict
+          artifact_name: "gitleaks-results-${{ github.run_id }}"                      
 
       # =========================
       # 5️⃣ Build Docker image
