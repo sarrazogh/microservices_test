@@ -15,7 +15,7 @@ jobs:
           - customer
           - shopping
 
-    permissions:           # Ensure workflow has permissions to access content & PRs
+    permissions:           
       contents: read
       pull-requests: read
 
@@ -58,9 +58,9 @@ jobs:
           gitleaks detect --redact --report-format=json --report-path=results-${{ matrix.service }}.json
 
       - name: Upload Gitleaks artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: gitleaks-report-${{ matrix.service }}-${{ github.run_id }}
+          name: gitleaks-report-${{ matrix.service }}
           path: results-${{ matrix.service }}.json
 
       # =========================
@@ -86,15 +86,22 @@ jobs:
             echo "No tests found"
 
       # =========================
-      # 7️⃣ SAST (Semgrep example)
+      # 7️⃣ SAST scan (Semgrep)
       # =========================
       - name: SAST scan (Semgrep)
         uses: returntocorp/semgrep-action@v1
         with:
           config: auto
 
+      - name: Upload Semgrep artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report-${{ matrix.service }}
+          path: semgrep-results.json
+          if-no-files-found: ignore
+
       # =========================
-      # 8️⃣ Dependency Scan (OWASP)
+      # 8️⃣ Dependency Scan (OWASP Dependency-Check)
       # =========================
       - name: Dependency scan (OWASP Dependency-Check)
         uses: dependency-check/Dependency-Check_Action@main
@@ -104,8 +111,15 @@ jobs:
           format: 'HTML'
           failOnCVSS: 7
 
+      - name: Upload Dependency-Check artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report-${{ matrix.service }}
+          path: dependency-check-report.html
+          if-no-files-found: ignore
+
       # =========================
-      # 9️⃣ Container Image Scan
+      # 9️⃣ Container Image Scan (Trivy)
       # =========================
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@master
