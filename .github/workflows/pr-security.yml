@@ -52,7 +52,7 @@ jobs:
       - name: Secrets scan (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
-          INPUT_GITHUB_TOKEN: ${{ secrets.INPUT_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.INPUT_GITHUB_TOKEN }}
 
       # =========================
       # 5️⃣ Build (Docker)
