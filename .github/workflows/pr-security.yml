@@ -1,4 +1,4 @@
-name: PR DevSecOps Pipeline
+name: Pull Request DevSecOps Pipeline
 
 on:
   pull_request:
