@@ -15,6 +15,10 @@ jobs:
           - customer
           - shopping
 
+    permissions:           # Ensure workflow has permissions to access content & PRs
+      contents: read
+      pull-requests: read
+
     steps:
       # =========================
       # 1️⃣ Checkout code
@@ -52,11 +56,12 @@ jobs:
       - name: Secrets scan (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.INPUT_GITHUB_TOKEN }}
-    with:
-     upload_artifact: false
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # default workflow token, or use your custom PAT
+        with:
+          upload_artifact: false                       # disable artifact to avoid 409 conflict
+
       # =========================
-      # 5️⃣ Build (Docker)
+      # 5️⃣ Build Docker image
       # =========================
       - name: Build Docker image
         run: |
@@ -76,7 +81,6 @@ jobs:
             npm test || true
           else
             echo "No tests found"
-          fi
 
       # =========================
       # 7️⃣ SAST (Semgrep example)
