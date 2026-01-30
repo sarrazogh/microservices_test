@@ -51,20 +51,27 @@ jobs:
           exit 0
 
       # =========================
-      # 4️⃣ Secrets Scan (Gitleaks)
+      # 4️⃣ Secrets Scan (Gitleaks via action)
       # =========================
       - name: Secrets scan (Gitleaks)
-        run: |
-          gitleaks detect --redact --report-format=json --report-path=results-${{ matrix.service }}.json
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_artifact: false  # disable automatic artifact upload
 
+      # =========================
+      # 5️⃣ Upload Gitleaks artifact manually
+      # =========================
       - name: Upload Gitleaks artifact
         uses: actions/upload-artifact@v4
         with:
           name: gitleaks-report-${{ matrix.service }}
-          path: results-${{ matrix.service }}.json
+          path: gitleaks-report.json
+          if-no-files-found: ignore
 
       # =========================
-      # 5️⃣ Build Docker image
+      # 6️⃣ Build Docker image
       # =========================
       - name: Build Docker image
         run: |
@@ -72,7 +79,7 @@ jobs:
           docker build -t ${{ matrix.service }}:pr .
 
       # =========================
-      # 6️⃣ Tests (placeholder)
+      # 7️⃣ Run tests (placeholder)
       # =========================
       - name: Run tests
         run: |
@@ -86,7 +93,7 @@ jobs:
             echo "No tests found"
 
       # =========================
-      # 7️⃣ SAST scan (Semgrep)
+      # 8️⃣ SAST scan (Semgrep)
       # =========================
       - name: SAST scan (Semgrep)
         uses: returntocorp/semgrep-action@v1
@@ -101,7 +108,7 @@ jobs:
           if-no-files-found: ignore
 
       # =========================
-      # 8️⃣ Dependency Scan (OWASP Dependency-Check)
+      # 9️⃣ Dependency Scan (OWASP Dependency-Check)
       # =========================
       - name: Dependency scan (OWASP Dependency-Check)
         uses: dependency-check/Dependency-Check_Action@main
@@ -119,7 +126,7 @@ jobs:
           if-no-files-found: ignore
 
       # =========================
-      # 9️⃣ Container Image Scan (Trivy)
+      # 🔟 Container Image Scan (Trivy)
       # =========================
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@master
