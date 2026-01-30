@@ -53,7 +53,8 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.INPUT_GITHUB_TOKEN }}
-
+    with:
+     upload_artifact: false
       # =========================
       # 5️⃣ Build (Docker)
       # =========================
