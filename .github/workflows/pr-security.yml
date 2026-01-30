@@ -142,11 +142,4 @@ jobs:
           format: json
           output: trivy-report-${{ matrix.service }}.json
           exit-code: 1
-          skip-dirs: |
-            /root/.npm
-            /root/.cache
-            /usr/share/doc
-          skip-files: |
-            **/*.jar
-            **/*.zip
-            **/*.tar
+
