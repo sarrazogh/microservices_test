@@ -1,4 +1,4 @@
-name: Pull Request DevSecOps Pipeline test
+name: Pull Request DevSecOps Pipeline
 
 on:
   pull_request:
