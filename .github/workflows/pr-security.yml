@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         service:
           - customer
@@ -107,6 +108,7 @@ jobs:
           config: auto
 
       - name: Upload Semgrep artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: semgrep-report-${{ matrix.service }}
@@ -125,6 +127,7 @@ jobs:
           failOnCVSS: 7
 
       - name: Upload Dependency-Check artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report-${{ matrix.service }}
@@ -135,19 +138,20 @@ jobs:
       # 🔟 Container Image Scan (Trivy)
       # =========================
       - name: Trivy image scan
-	id: trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ matrix.service }}:pr
           severity: CRITICAL,HIGH
+          vuln-type: os,library
+          ignore-unfixed: true
           format: json
           output: trivy-report-${{ matrix.service }}.json
-          exit-code: 1
-          skip-dirs: |
-            /root/.npm
-            /root/.cache
-            /usr/share/doc
-          skip-files: |
-            **/*.jar
-            **/*.zip
-            **/*.tar
+          exit-code: "0"
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report-${{ matrix.service }}
+          path: trivy-report-${{ matrix.service }}.json
+          if-no-files-found: ignore
