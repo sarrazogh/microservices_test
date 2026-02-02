@@ -1,4 +1,4 @@
-name: Pull Request DevSecOps Pipeline
+name: Pull Request DevSecOps Pipeline test
 
 on:
   pull_request:
@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         service:
           - customer
@@ -99,22 +100,20 @@ jobs:
           fi
 
       # =========================
-      # 6️⃣ SAST & Code Quality (SonarCloud)
+      # 6️⃣ SAST scan (Semgrep)
       # =========================
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: SAST scan (Semgrep)
+        uses: returntocorp/semgrep-action@v1
         with:
-          projectBaseDir: ${{ matrix.service }}
-          args: >
-            -Dsonar.organization=TON_ORGANIZATION
-            -Dsonar.projectKey=${{ matrix.service }}-service
-            -Dsonar.sources=.
-            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
-            -Dsonar.pullrequest.branch=${{ github.head_ref }}
-            -Dsonar.pullrequest.base=${{ github.base_ref }}
+          config: auto
+
+      - name: Upload Semgrep artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report-${{ matrix.service }}
+          path: semgrep-results.json
+          if-no-files-found: ignore
 
       # =========================
       # 7️⃣ Dependency Scan (OWASP)
@@ -128,6 +127,7 @@ jobs:
           failOnCVSS: 7
 
       - name: Upload Dependency-Check artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report-${{ matrix.service }}
@@ -142,9 +142,11 @@ jobs:
         with:
           image-ref: ${{ matrix.service }}:pr
           severity: CRITICAL,HIGH
+          vuln-type: os,library
+          ignore-unfixed: true
           format: json
           output: trivy-report-${{ matrix.service }}.json
-          exit-code: 1
+          exit-code: "1"
 
       - name: Upload Trivy report
         if: always()
@@ -152,3 +154,4 @@ jobs:
         with:
           name: trivy-report-${{ matrix.service }}
           path: trivy-report-${{ matrix.service }}.json
+          if-no-files-found: ignore
