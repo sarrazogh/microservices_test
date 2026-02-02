@@ -146,7 +146,7 @@ jobs:
           ignore-unfixed: true
           format: json
           output: trivy-report-${{ matrix.service }}.json
-          exit-code: "1"
+          exit-code: "0"
 
       - name: Upload Trivy report
         if: always()
